@@ -31,6 +31,8 @@ services:
       - DNS_KEEP_NAMESERVER=off
       - HEALTH_TARGET_ADDRESSES=1.1.1.1:53
       - HEALTH_WAIT_SUCCESS_DURATION=20s
+      - NETWORK_LOCAL=192.168.0.0/16,10.0.0.0/8,172.16.0.0/12
+      - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/16,10.0.0.0/8,172.16.0.0/12
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: always
@@ -157,12 +159,16 @@ services:
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
     network_mode: "service:gluetun"
+    # ADD THESE DNS ENTRIES:
+    dns:
+      - 1.1.1.1 # Cloudflare
+      - 8.8.8.8 # Google
     depends_on:
       - gluetun
       - jellyfin
     environment:
       - TZ=${TIMEZONE}
-      - LOG_LEVEL=info
+      - LOG_LEVEL=debug # Changed to debug for better troubleshooting
     volumes:
       - ./jellyseerr:/app/config
     restart: unless-stopped
