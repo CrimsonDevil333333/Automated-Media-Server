@@ -42,6 +42,9 @@ services:
   jellyfin:
     image: jellyfin/jellyfin
     container_name: jellyfin
+    dns:
+      - 1.1.1.1 # Cloudflare
+      - 8.8.8.8 # Google
     ports:
       - 8096:8096
     volumes:
@@ -159,10 +162,6 @@ services:
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
     network_mode: "service:gluetun"
-    # ADD THESE DNS ENTRIES:
-    dns:
-      - 1.1.1.1 # Cloudflare
-      - 8.8.8.8 # Google
     depends_on:
       - gluetun
       - jellyfin
