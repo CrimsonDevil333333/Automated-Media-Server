@@ -10,7 +10,7 @@ This repository contains a production-ready Docker Compose configuration for a c
 
 The stack is divided into two logical zones to balance privacy with performance:
 
-* **🔒 Privacy Zone (Behind VPN):** All "Arr" applications (**Radarr, Sonarr, Lidarr, Prowlarr**) and **FlareSolverr** are routed through a **Gluetun** container. This ensures your search queries and metadata traffic are encrypted and masked.
+* **🔒 Privacy Zone (Behind VPN):** All "Arr" applications (**Radarr, Sonarr, Lidarr, Prowlarr**), **Jellyseerr**, and **FlareSolverr** are routed through a **Gluetun** container. This ensures your search queries and metadata traffic are encrypted and masked.
 * **🚀 Performance Zone (Local ISP):** **qBittorrent** and **Jellyfin** run directly on your host network. This prevents VPN overhead from slowing down your 4K streams or capping your torrent download speeds.
 
 ---
@@ -19,7 +19,7 @@ The stack is divided into two logical zones to balance privacy with performance:
 
 | Service | Port | Access URL | Role |
 | --- | --- | --- | --- |
-| **Jellyseerr** | `5055` | [http://localhost:5055](https://www.google.com/search?q=http://localhost:5055) | User Request Interface |
+| **Jellyseerr** | `5055` | [http://localhost:5055](https://www.google.com/search?q=http://localhost:5055) | User Request Interface (VPN) |
 | **Jellyfin** | `8096` | [http://localhost:8096](https://www.google.com/search?q=http://localhost:8096) | Media Server & Player |
 | **qBittorrent** | `8701` | [http://localhost:8701](https://www.google.com/search?q=http://localhost:8701) | Torrent Downloader |
 | **Prowlarr** | `9696` | [http://localhost:9696](https://www.google.com/search?q=http://localhost:9696) | Indexer Manager (VPN) |
@@ -66,34 +66,22 @@ docker compose exec radarr curl https://ipinfo.io
 
 ```
 
-> **Note:** If the output shows your real ISP location, stop the containers and check your `gluetun` credentials.
-
 ---
 
 ## 🔗 Critical Connection Logic
 
-Because the apps live in different network contexts (some in the VPN container, some on the host), follow these rules to link them:
+Because the apps live in different network contexts (some in the VPN container, some on the host), use this table to configure the connections in each app's Web UI:
 
-### A. Linking Arrs to qBittorrent (VPN → Host)
+| Connection | Hostname to Use | Reason |
+| --- | --- | --- |
+| **Radarr/Sonarr ⮕ qBittorrent** | `host.docker.internal` | Connects from inside the VPN container to your Windows Host. |
+| **Prowlarr ⮕ Radarr/Sonarr** | `localhost` | Both live inside the same network (Gluetun). |
+| **Jellyseerr ⮕ Radarr/Sonarr** | `localhost` | Both live inside the same network (Gluetun). |
+| **Jellyseerr ⮕ Jellyfin** | `host.docker.internal` | Connects from the VPN network back to the Host network. |
 
-Since qBittorrent is outside the VPN, the Arrs cannot find it via `localhost`.
+### Why use `host.docker.internal`?
 
-1. Run `ipconfig` in PowerShell to find your **Local IPv4 Address** (e.g., `192.168.1.15`).
-2. In Radarr/Sonarr > **Settings** > **Download Clients**:
-* **Host:** `192.168.1.15` (Your Local IP)
-* **Port:** `8701`
-
-
-
-### B. Linking Prowlarr to Arrs (VPN → VPN)
-
-Since these are all routed through the Gluetun container, they share the same network stack.
-
-1. In Prowlarr > **Settings** > **Apps**:
-* **Prowlarr Server:** `http://localhost:9696`
-* **Radarr/Sonarr Server:** `http://localhost:7878` (etc.)
-
-
+In this setup, `localhost` inside a container (like Radarr) refers only to that container. To reach **qBittorrent** or **Jellyfin** (which are on the host network), we use `host.docker.internal` to exit the Docker network and communicate with the Windows machine.
 
 ---
 
@@ -116,5 +104,5 @@ ${DATA_LOCATION}
 ## 🛠 Troubleshooting
 
 * **VPN Stuck Booting:** Check logs with `docker compose logs -f gluetun`. Ensure your Proton VPN account is active and you are using the **OpenVPN credentials**, not your standard login email.
-* **Cannot access Web UI:** If `localhost` doesn't work, try accessing the services via your local IP (e.g., `http://192.168.1.15:7878`).
-* **DNS Failures:** If containers can't reach the internet, add `DNS_ADDRESS=1.1.1.1` to the `gluetun` environment variables in your `docker-compose.yml`.
+* **Connection Refused:** Ensure `extra_hosts` is correctly defined in your `docker-compose.yml` for the `gluetun` service, otherwise `host.docker.internal` will not resolve.
+* **DNS Failures:** If containers can't reach the internet, add `DNS_ADDRESS=1.1.1.1` to the `gluetun` environment variables.
