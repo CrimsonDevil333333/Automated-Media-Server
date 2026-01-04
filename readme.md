@@ -1,104 +1,120 @@
-🏠 Automated Media Server Stack (VPN Protected)
+# 🏠 Automated Media Server Stack
 
-This is a complete, automated media server configuration. It is designed to find, download, and organize media while keeping your search traffic private via Proton VPN (Free Tier).
+### 🛡️ VPN-Protected | ⚡ High-Performance | 🤖 Fully Automated
 
-🏗️ Architecture Summary
+This repository contains a production-ready Docker Compose configuration for a complete media ecosystem. It is specifically tuned for a **"Split-Network"** architecture: keeping your automation and metadata searches private via **Proton VPN**, while maintaining maximum ISP speeds for downloads and local streaming.
 
-This setup uses a "Split-Network" design for maximum performance and privacy:
+---
 
-Privacy Zone (Behind VPN): All "Arr" apps (Radarr, Sonarr, etc.) and metadata searches are routed through Gluetun. If the VPN fails, these apps lose internet access immediately (Kill Switch).
+## 🏗️ Architecture Overview
 
-Performance Zone (Local ISP): qBittorrent and Jellyfin run on your local internet connection. This ensures you get your full ISP download speed and can stream to your TV without VPN lag.
+The stack is divided into two logical zones to balance privacy with performance:
 
-🌐 Service Map & Access
+* **🔒 Privacy Zone (Behind VPN):** All "Arr" applications (**Radarr, Sonarr, Lidarr, Prowlarr**) and **FlareSolverr** are routed through a **Gluetun** container. This ensures your search queries and metadata traffic are encrypted and masked.
+* **🚀 Performance Zone (Local ISP):** **qBittorrent** and **Jellyfin** run directly on your host network. This prevents VPN overhead from slowing down your 4K streams or capping your torrent download speeds.
+
+---
+
+## 🌐 Service Map
 
 | Service | Port | Access URL | Role |
-| :--- | :--- | :--- | :--- |
-| **Jellyfin** | 8096 | [http://localhost:8096](http://localhost:8096) | Media Library & Player |
-| **qBittorrent** | 8701 | [http://localhost:8701](http://localhost:8701) | Torrent Downloader |
-| **Prowlarr** | 9696 | [http://localhost:9696](http://localhost:9696) | Torrent Site Indexer |
-| **Radarr** | 7878 | [http://localhost:7878](http://localhost:7878) | Movie Manager |
-| **Sonarr** | 8989 | [http://localhost:8989](http://localhost:8989) | TV Show Manager |
-| **Lidarr** | 8686 | [http://localhost:8686](http://localhost:8686) | Music Manager |
-| **Bazarr** | 6767 | [http://localhost:6767](http://localhost:6767) | Subtitle Downloader |
-| **Flaresolverr** | 8191 | [http://localhost:8191](http://localhost:8191) | Cloudflare Solver |
-| **Jellyseerr** | 5055 | [http://localhost:5055](http://localhost:5055) | Request Site (Optional) |
+| --- | --- | --- | --- |
+| **Jellyseerr** | `5055` | [http://localhost:5055](https://www.google.com/search?q=http://localhost:5055) | User Request Interface |
+| **Jellyfin** | `8096` | [http://localhost:8096](https://www.google.com/search?q=http://localhost:8096) | Media Server & Player |
+| **qBittorrent** | `8701` | [http://localhost:8701](https://www.google.com/search?q=http://localhost:8701) | Torrent Downloader |
+| **Prowlarr** | `9696` | [http://localhost:9696](https://www.google.com/search?q=http://localhost:9696) | Indexer Manager (VPN) |
+| **Radarr** | `7878` | [http://localhost:7878](https://www.google.com/search?q=http://localhost:7878) | Movie Management (VPN) |
+| **Sonarr** | `8989` | [http://localhost:8989](https://www.google.com/search?q=http://localhost:8989) | TV Show Management (VPN) |
+| **Lidarr** | `8686` | [http://localhost:8686](https://www.google.com/search?q=http://localhost:8686) | Music Management (VPN) |
+| **Bazarr** | `6767` | [http://localhost:6767](https://www.google.com/search?q=http://localhost:6767) | Subtitle Automation (VPN) |
 
-🚀 Setup Instructions
+---
 
-1. Environment Configuration
+## 🚀 Getting Started
 
-Create a .env file in the root folder with the following content:
+### 1. Environment Configuration
 
+Create a `.env` file in your project root. This file handles your local paths and VPN credentials.
+
+```bash
+# General Settings
 TIMEZONE=Asia/Kolkata
 DATA_LOCATION=D:/Your/Media/Folder
 
-# Get these from Proton VPN Dashboard > Account > OpenVPN/IKEv2 username
-OPENVPN_USER=your_long_proton_username
-OPENVPN_PASSWORD=your_long_proton_password
+# Proton VPN Credentials 
+# (Find these in Proton Dashboard > Account > OpenVPN/IKEv2)
+OPENVPN_USER=your_proton_username
+OPENVPN_PASSWORD=your_proton_password
 
+```
 
-2. Launch the Stack
+### 2. Deployment
 
-Run this command in PowerShell inside your project folder:
+Launch the entire stack in detached mode:
 
+```powershell
 docker compose up -d
 
+```
 
-3. Verify VPN Protection
+### 3. Verify VPN Kill-Switch
 
-Run this command to ensure Radarr is effectively hidden in another country:
+Confirm that your management apps are successfully routed through the VPN:
 
-docker compose exec radarr curl [https://ipinfo.io](https://ipinfo.io)
+```powershell
+docker compose exec radarr curl https://ipinfo.io
+
+```
+
+> **Note:** If the output shows your real ISP location, stop the containers and check your `gluetun` credentials.
+
+---
+
+## 🔗 Critical Connection Logic
+
+Because the apps live in different network contexts (some in the VPN container, some on the host), follow these rules to link them:
+
+### A. Linking Arrs to qBittorrent (VPN → Host)
+
+Since qBittorrent is outside the VPN, the Arrs cannot find it via `localhost`.
+
+1. Run `ipconfig` in PowerShell to find your **Local IPv4 Address** (e.g., `192.168.1.15`).
+2. In Radarr/Sonarr > **Settings** > **Download Clients**:
+* **Host:** `192.168.1.15` (Your Local IP)
+* **Port:** `8701`
 
 
-If the response shows a country like Netherlands, Singapore, or USA, your VPN is working.
 
-🔗 Critical Connection Settings
+### B. Linking Prowlarr to Arrs (VPN → VPN)
 
-Because the apps live in different network zones, you cannot always use localhost to connect them.
+Since these are all routed through the Gluetun container, they share the same network stack.
 
-To link Radarr/Sonarr to qBittorrent:
+1. In Prowlarr > **Settings** > **Apps**:
+* **Prowlarr Server:** `http://localhost:9696`
+* **Radarr/Sonarr Server:** `http://localhost:7878` (etc.)
 
-Find your computer's local IP (Run ipconfig in PowerShell). It usually looks like 192.168.1.X.
 
-In Radarr > Settings > Download Clients, add qBittorrent.
 
-Host: Use your Local IP (e.g., 192.168.1.15). Do not use localhost.
+---
 
-Port: 8701
+## 📂 Data Structure (Atomic Moves)
 
-To link Prowlarr to Radarr/Sonarr:
+For "Instant Moves" (hardlinking) to work properly, qBittorrent and the Arrs must see the same internal file structure.
 
-Since these are all inside the same VPN container:
-
-In Prowlarr > Settings > Apps.
-
-Prowlarr Server: http://localhost:9696
-
-Radarr Server: http://localhost:7878
-
-Sonarr Server: http://localhost:8989
-
-Lidarr Server: http://localhost:8686
-
-📂 Recommended Folder Structure
-
-For "Instant Moves" (Atomic Moves) to work, ensure your ${DATA_LOCATION} is structured like this:
-
-/data
-├── torrents          # Where qBittorrent downloads
+```text
+${DATA_LOCATION}
+├── torrents          # Active & Seeding downloads
 └── media
-    ├── movies        # Where Radarr moves files
-    ├── tv            # Where Sonarr moves files
-    └── music         # Where Lidarr moves files
+    ├── movies        # Organized library for Jellyfin
+    ├── tv            # Organized library for Jellyfin
+    └── music         # Organized library for Jellyfin
 
+```
 
-🛠 Troubleshooting
+---
 
-Check VPN Status:
-docker compose logs -f gluetun
-Look for: "Initialization Sequence Completed"
+## 🛠 Troubleshooting
 
-DNS Issues:
-If containers can't find the internet, ensure DOT=off and DNS_ADDRESS=1.1.1.1 are set in the gluetun environment variables.
+* **VPN Stuck Booting:** Check logs with `docker compose logs -f gluetun`. Ensure your Proton VPN account is active and you are using the **OpenVPN credentials**, not your standard login email.
+* **Cannot access Web UI:** If `localhost` doesn't work, try accessing the services via your local IP (e.g., `http://192.168.1.15:7878`).
+* **DNS Failures:** If containers can't reach the internet, add `DNS_ADDRESS=1.1.1.1` to the `gluetun` environment variables in your `docker-compose.yml`.
