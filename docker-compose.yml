@@ -1,20 +1,7 @@
-services:
-  jellyfin:
-    image: jellyfin/jellyfin
-    container_name: jellyfin
-    ports:
-      - 8096:8096/tcp
-    volumes:
-      - ./jellyfin-config:/config
-      - ./jellyfin-cache:/cache
-      - ${DATA_LOCATION}:/data
-    restart: 'unless-stopped'
-    # COMMENTED OUT FOR WINDOWS COMPATIBILITY:
-    # devices:
-    #   - /dev/dri:/dev/dri 
-    environment:
-      - TZ=${TIMEZONE}
+version: "3.8"
 
+services:
+  # --- NETWORK & PRIVACY HUB ---
   gluetun:
     image: qmcgaw/gluetun
     container_name: gluetun
@@ -22,6 +9,7 @@ services:
       - NET_ADMIN
     devices:
       - /dev/net/tun
+    # All ports for services behind the VPN must be mapped here
     ports:
       - 7878:7878   # Radarr
       - 8989:8989   # Sonarr
@@ -29,6 +17,7 @@ services:
       - 6767:6767   # Bazarr
       - 9696:9696   # Prowlarr
       - 8191:8191   # FlareSolverr
+      - 5055:5055   # Jellyseerr
     volumes:
       - ./gluetun:/gluetun
     environment:
@@ -38,18 +27,34 @@ services:
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
       - FREE_ONLY=on
       - TZ=${TIMEZONE}
-      # --- DNS FIXES ---
-      - DOT=off                          # Disable DNS-over-TLS (often blocked on free tiers)
-      - DNS_ADDRESS=1.1.1.1              # Force use of Cloudflare DNS
-      - DNS_KEEP_NAMESERVER=off          # Stop using the leaky Windows host DNS
-      # --- HEALTHCHECK STABILITY ---
+      # DNS & Connectivity Fixes for Windows/Proton Free
+      - DOT=off
+      - DNS_ADDRESS=1.1.1.1
+      - DNS_KEEP_NAMESERVER=off
       - HEALTH_TARGET_ADDRESSES=1.1.1.1:53
       - HEALTH_WAIT_SUCCESS_DURATION=20s
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: always
+
+  # --- PERFORMANCE ZONE (ISP Network) ---
+
+  jellyfin:
+    image: jellyfin/jellyfin
+    container_name: jellyfin
+    ports:
+      - 8096:8096
+    volumes:
+      - ./jellyfin-config:/config
+      - ./jellyfin-cache:/cache
+      - ${DATA_LOCATION}:/data
+    environment:
+      - TZ=${TIMEZONE}
+    restart: unless-stopped
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent
     container_name: qbittorrent
-    # No network_mode here = uses your normal home internet
     ports:
       - 8701:8701          # Web UI
       - 6881:6881          # Torrent traffic
@@ -64,10 +69,11 @@ services:
       - ${DATA_LOCATION}:/data
     restart: unless-stopped
 
+  # --- PRIVACY ZONE (VPN Network) ---
+
   radarr:
     image: lscr.io/linuxserver/radarr
     container_name: radarr
-    restart: unless-stopped
     network_mode: "service:gluetun"
     depends_on:
       - gluetun
@@ -78,11 +84,11 @@ services:
     volumes:
       - ./radarr:/config
       - ${DATA_LOCATION}:/data
+    restart: unless-stopped
 
   sonarr:
     image: lscr.io/linuxserver/sonarr
     container_name: sonarr
-    restart: unless-stopped
     network_mode: "service:gluetun"
     depends_on:
       - gluetun
@@ -93,11 +99,11 @@ services:
     volumes:
       - ./sonarr:/config
       - ${DATA_LOCATION}:/data
+    restart: unless-stopped
 
   lidarr:
-    image: lscr.io/linuxserver/lidarr:latest
+    image: lscr.io/linuxserver/lidarr
     container_name: lidarr
-    restart: unless-stopped
     network_mode: "service:gluetun"
     depends_on:
       - gluetun
@@ -108,11 +114,11 @@ services:
     volumes:
       - ./lidarr:/config
       - ${DATA_LOCATION}:/data
+    restart: unless-stopped
 
   bazarr:
     image: lscr.io/linuxserver/bazarr
     container_name: bazarr
-    restart: unless-stopped
     network_mode: "service:gluetun"
     depends_on:
       - gluetun
@@ -123,11 +129,11 @@ services:
     volumes:
       - ./bazarr:/config
       - ${DATA_LOCATION}:/data
+    restart: unless-stopped
 
   prowlarr:
     image: lscr.io/linuxserver/prowlarr
     container_name: prowlarr
-    restart: unless-stopped
     network_mode: "service:gluetun"
     depends_on:
       - gluetun
@@ -137,30 +143,28 @@ services:
       - TZ=${TIMEZONE}
     volumes:
       - ./prowlarr:/config
+    restart: unless-stopped
 
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
-    restart: unless-stopped
     network_mode: "service:gluetun"
     depends_on:
       - gluetun
     environment:
       - TZ=${TIMEZONE}
+    restart: unless-stopped
 
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
-    restart: unless-stopped
-    ports:
-      - "5055:5055"
+    network_mode: "service:gluetun"
     depends_on:
       - gluetun
       - jellyfin
-      - sonarr
-      - radarr
     environment:
       - TZ=${TIMEZONE}
       - LOG_LEVEL=info
     volumes:
       - ./jellyseerr:/app/config
+    restart: unless-stopped
