@@ -2,7 +2,6 @@ services:
   jellyfin:
     image: jellyfin/jellyfin
     container_name: jellyfin
-    # user: 1000:1000
     ports:
       - 8096:8096/tcp
     volumes:
@@ -10,9 +9,11 @@ services:
       - ./jellyfin-cache:/cache
       - ${DATA_LOCATION}:/data
     restart: 'unless-stopped'
+    # COMMENTED OUT FOR WINDOWS COMPATIBILITY:
+    # devices:
+    #   - /dev/dri:/dev/dri 
     environment:
       - TZ=${TIMEZONE}
-      - /dev/dri:/dev/dri 
 
   gluetun:
     image: qmcgaw/gluetun
@@ -21,44 +22,43 @@ services:
       - NET_ADMIN
     devices:
       - /dev/net/tun
-    ports: # Expose qBittorrent's web UI and torrent ports through VPN
-      - 8096:8096   # Jellyfin
-      - 8701:8701   # qBittorrent Web UI
-      - 6881:6881   # torrent port
-      - 6881:6881/udp
+    ports:
       - 7878:7878   # Radarr
       - 8989:8989   # Sonarr
       - 8686:8686   # Lidarr
       - 6767:6767   # Bazarr
       - 9696:9696   # Prowlarr
       - 8191:8191   # FlareSolverr
-      # - 5055:5055   # Jellyseerr
     volumes:
       - ./gluetun:/gluetun
-      # - ./gluetun/us-den.conf:/gluetun/wireguard/wg0.conf
     environment:
       - VPN_SERVICE_PROVIDER=protonvpn
       - VPN_TYPE=openvpn
       - OPENVPN_USER=${OPENVPN_USER}
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
-      - VPN_PORT_FORWARDING=off # Only avilable in paid tier
       - FREE_ONLY=on
-      - SERVER_COUNTRIES=United States
       - TZ=${TIMEZONE}
+      # --- DNS FIXES ---
+      - DOT=off                          # Disable DNS-over-TLS (often blocked on free tiers)
+      - DNS_ADDRESS=1.1.1.1              # Force use of Cloudflare DNS
+      - DNS_KEEP_NAMESERVER=off          # Stop using the leaky Windows host DNS
+      # --- HEALTHCHECK STABILITY ---
+      - HEALTH_TARGET_ADDRESSES=1.1.1.1:53
+      - HEALTH_WAIT_SUCCESS_DURATION=20s
 
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent
     container_name: qbittorrent
-    network_mode: "service:gluetun"  # Routes all traffic through Gluetun
-    depends_on:
-      - gluetun
+    # No network_mode here = uses your normal home internet
+    ports:
+      - 8701:8701          # Web UI
+      - 6881:6881          # Torrent traffic
+      - 6881:6881/udp
     environment:
       - PUID=1000
       - PGID=1000
       - TZ=${TIMEZONE}
       - WEBUI_PORT=8701
-      - WEBUI_ADDRESS=0.0.0.0
-      - WEBUI_EXTERNAL_ACCESS=true
     volumes:
       - ./qbittorrent:/config
       - ${DATA_LOCATION}:/data
@@ -68,11 +68,9 @@ services:
     image: lscr.io/linuxserver/radarr
     container_name: radarr
     restart: unless-stopped
-    network_mode: "service:gluetun"  # Routes all traffic through Gluetun
+    network_mode: "service:gluetun"
     depends_on:
       - gluetun
-    # ports:
-    #   - 7878:7878
     environment:
       - PUID=1000
       - PGID=1000
@@ -85,11 +83,9 @@ services:
     image: lscr.io/linuxserver/sonarr
     container_name: sonarr
     restart: unless-stopped
-    network_mode: "service:gluetun"  # Routes all traffic through Gluetun
+    network_mode: "service:gluetun"
     depends_on:
       - gluetun
-    # ports:
-    #   - 8989:8989
     environment:
       - PUID=1000
       - PGID=1000
@@ -101,11 +97,10 @@ services:
   lidarr:
     image: lscr.io/linuxserver/lidarr:latest
     container_name: lidarr
-    network_mode: "service:gluetun"  # Routes all traffic through Gluetun
+    restart: unless-stopped
+    network_mode: "service:gluetun"
     depends_on:
       - gluetun
-    # ports:
-    #   - 8686:8686
     environment:
       - PUID=1000
       - PGID=1000
@@ -113,17 +108,14 @@ services:
     volumes:
       - ./lidarr:/config
       - ${DATA_LOCATION}:/data
-    restart: unless-stopped
 
   bazarr:
     image: lscr.io/linuxserver/bazarr
     container_name: bazarr
     restart: unless-stopped
-    network_mode: "service:gluetun"  # Routes all traffic through Gluetun
+    network_mode: "service:gluetun"
     depends_on:
       - gluetun
-    # ports:
-    #   - 6767:6767
     environment:
       - PUID=1000
       - PGID=1000
@@ -136,11 +128,9 @@ services:
     image: lscr.io/linuxserver/prowlarr
     container_name: prowlarr
     restart: unless-stopped
-    network_mode: "service:gluetun"  # Routes all traffic through Gluetun
+    network_mode: "service:gluetun"
     depends_on:
       - gluetun
-    # ports:
-    #   - 9696:9696
     environment:
       - PUID=1000
       - PGID=1000
@@ -151,28 +141,26 @@ services:
   flaresolverr:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: flaresolverr
-    network_mode: "service:gluetun"  # Routes all traffic through Gluetun
-    environment:
-      - TZ=${TIMEZONE}
+    restart: unless-stopped
+    network_mode: "service:gluetun"
     depends_on:
       - gluetun
-    # ports:
-    #   - 8191:8191
-    restart: unless-stopped
+    environment:
+      - TZ=${TIMEZONE}
 
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
-    environment:
-      - TZ=${TIMEZONE}   
-      - LOG_LEVEL=info
+    restart: unless-stopped
     ports:
       - "5055:5055"
-    volumes:
-      - ./jellyseerr:/app/config
-    restart: unless-stopped
     depends_on:
       - gluetun
       - jellyfin
       - sonarr
       - radarr
+    environment:
+      - TZ=${TIMEZONE}
+      - LOG_LEVEL=info
+    volumes:
+      - ./jellyseerr:/app/config

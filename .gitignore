@@ -2,3 +2,10 @@
 *config
 *cache
 *data
+*gluetun
+*qbittorrent
+*radarr
+*sonarr
+*lidarr
+*bazarr
+*prowlarr
