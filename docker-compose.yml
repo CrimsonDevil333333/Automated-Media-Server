@@ -1,4 +1,17 @@
 services:
+
+  # nginx-proxy-manager:
+  #   image: 'jc21/nginx-proxy-manager:latest'
+  #   container_name: nginx-proxy-manager
+  #   restart: unless-stopped
+  #   ports:
+  #     - '80:80'   # Public HTTP
+  #     - '81:81'   # Admin UI
+  #     - '443:443' # Public HTTPS
+  #   volumes:
+  #     - ./npm/data:/data
+  #     - ./npm/letsencrypt:/etc/letsencrypt
+
   # --- NETWORK & PRIVACY HUB ---
   gluetun:
     image: qmcgaw/gluetun
@@ -101,9 +114,11 @@ services:
       - 3000:3000
     volumes:
       - ./homepage/config:/app/config
-      - /var/run/docker.sock:/var/run/docker.sock # For container status
+      - /var/run/docker.sock:/var/run/docker.sock
     environment:
       - TZ=${TIMEZONE}
+      # Only for home networks
+      - HOMEPAGE_ALLOWED_HOSTS=*
     restart: unless-stopped
 
   # --- PRIVACY ZONE (VPN Network) ---

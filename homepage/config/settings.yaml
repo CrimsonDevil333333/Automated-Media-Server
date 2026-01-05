@@ -1,7 +1,14 @@
----
-# For configuration options and examples, please see:
-# https://gethomepage.dev/configs/settings/
-
-providers:
-  openweathermap: openweathermapapikey
-  weatherapi: weatherapiapikey
+layout:
+  Media:
+    style: row
+    columns: 3
+  Automation:
+    style: row
+    columns: 3
+  Download Client:
+    style: row
+    columns: 3
+# --- Glance Appearance ---
+# cardBlur: none # Glance uses solid cards, not blur
+# theme: dark
+# color: slate # Matches the 'Catppuccin Mocha' vibe

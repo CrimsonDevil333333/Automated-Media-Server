@@ -1,3 +1,11 @@
+# - Infrastructure:
+#     - Docker Stats:
+#         icon: docker.png
+#         widget:
+#           type: docker
+#           server: my-docker # Connects the widget to the socket
+#           label: System
+
 # --- Media Management ---
 - Media:
     - Jellyseerr:
@@ -7,7 +15,7 @@
         widget:
           type: jellyseerr
           url: http://jellyseerr:5055
-          key: YOUR_JELLYSEERR_API_KEY
+          key: MTc2NzU1MjYwNTQ4MDczNWNlNTdlLTA0MGItNDZiOC1iMjgzLWU2MjJkMTYwODI5Zg==
 
     - Jellyfin:
         icon: jellyfin.png
@@ -16,17 +24,25 @@
         widget:
           type: jellyfin
           url: http://jellyfin:8096
-          key: YOUR_JELLYFIN_API_KEY
+          key: cb0d86a2f83d45cea43c91282ae990fc
 
 # --- Downloads & Automation (Behind VPN) ---
 - Automation:
+    - Prowlarr:
+        icon: prowlarr.png
+        href: http://localhost:9696
+        widget:
+          type: prowlarr
+          url: http://gluetun:9696
+          key: fc7f71abea9e47c8ba17774bbf4415c8
+
     - Radarr:
         icon: radarr.png
         href: http://localhost:7878
         widget:
           type: radarr
           url: http://gluetun:7878 # Dashboard talks to VPN bubble
-          key: YOUR_RADARR_API_KEY
+          key: 8de6cae4a8184005a63f9b445b939bc3
 
     - Sonarr:
         icon: sonarr.png
@@ -34,15 +50,15 @@
         widget:
           type: sonarr
           url: http://gluetun:8989
-          key: YOUR_SONARR_API_KEY
+          key: 857bb5d532be445e88a99dbe5bbe15dd
 
-    - Prowlarr:
-        icon: prowlarr.png
-        href: http://localhost:9696
+    - Lidarr:
+        icon: lidarr.png
+        href: http://localhost:8686
         widget:
-          type: prowlarr
-          url: http://gluetun:9696
-          key: YOUR_PROWLARR_API_KEY
+          type: lidarr
+          url: http://gluetun:8686
+          key: 2f8cae4df7ba48efb8d30a0e1216425b
 
 - Download Client:
     - qBittorrent:
