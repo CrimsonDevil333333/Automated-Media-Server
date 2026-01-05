@@ -15,7 +15,7 @@ services:
       - 6767:6767   # Bazarr
       - 9696:9696   # Prowlarr
       - 8191:8191   # FlareSolverr
-      - 5055:5055   # Jellyseerr
+      # - 5055:5055   # Jellyseerr
     volumes:
       - ./gluetun:/gluetun
     environment:
@@ -70,6 +70,40 @@ services:
     volumes:
       - ./qbittorrent:/config
       - ${DATA_LOCATION}:/data
+    restart: unless-stopped
+
+  jellyseerr:
+    image: fallenbagel/jellyseerr:latest
+    container_name: jellyseerr
+    # Removed jellyseerr from vpn
+    ports:
+      - 5055:5055
+    dns:
+      - 1.1.1.1 # Cloudflare
+      - 8.8.8.8 # Google
+    # network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+      - jellyfin
+    environment:
+      - TZ=${TIMEZONE}
+      - LOG_LEVEL=debug # Changed to debug for better troubleshooting
+    volumes:
+      - ./jellyseerr:/app/config
+    # extra_hosts:
+    #   - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    container_name: homepage
+    ports:
+      - 3000:3000
+    volumes:
+      - ./homepage/config:/app/config
+      - /var/run/docker.sock:/var/run/docker.sock # For container status
+    environment:
+      - TZ=${TIMEZONE}
     restart: unless-stopped
 
   # --- PRIVACY ZONE (VPN Network) ---
@@ -156,18 +190,4 @@ services:
       - gluetun
     environment:
       - TZ=${TIMEZONE}
-    restart: unless-stopped
-
-  jellyseerr:
-    image: fallenbagel/jellyseerr:latest
-    container_name: jellyseerr
-    network_mode: "service:gluetun"
-    depends_on:
-      - gluetun
-      - jellyfin
-    environment:
-      - TZ=${TIMEZONE}
-      - LOG_LEVEL=debug # Changed to debug for better troubleshooting
-    volumes:
-      - ./jellyseerr:/app/config
     restart: unless-stopped

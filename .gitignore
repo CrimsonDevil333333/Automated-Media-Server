@@ -1,5 +1,4 @@
 .env
-*config
 *cache
 *data
 *gluetun
@@ -10,3 +9,5 @@
 *bazarr
 *prowlarr
 *jellyseerr
+*jellyfin-config
+*log
