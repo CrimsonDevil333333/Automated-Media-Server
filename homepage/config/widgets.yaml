@@ -1,17 +1,30 @@
-# widgets.yaml
+# --- System Health & Environment ---
 - resources:
-        cpu: true
-        memory: true
-        disk: /
-        label: System Info
+          cpu: true
+          memory: true
+          disk: /
+          uptime: true
+          #   cputemp: true # Shows CPU Temperature (if supported by host)
+          network: true # Shows real-time Upload/Download speeds
 
-# - search:
-#         provider: duckduckgo
-#         focus: true
-#         target: _blank
-
+# --- Date & Time Display ---
 - datetime:
-        text_size: xl
-        format:
-              dateStyle: long
-              timeStyle: short
+          text_size: xl
+          format:
+                  dateStyle: long # e.g., January 7, 2026
+                  timeStyle: short # e.g., 4:30 AM
+          hour12: true # Use 12-hour clock
+
+# # --- Global Search Bar ---
+# - search:
+#           provider: google
+#           target: _blank # Opens results in a new tab
+#           showSearchSuggestions: true
+
+# --- Weather Info ---
+- openmeteo:
+          label: Local Weather
+          latitude: 19.0760 # Replace with your lat
+          longitude: 72.8777 # Replace with your long
+          units: metric # Use 'imperial' for Fahrenheit
+          cache: 15 # Refresh interval in minutes

@@ -6,11 +6,33 @@
 #           server: my-docker # Connects the widget to the socket
 #           label: System
 
+- Media Releases:
+    - Calendar:
+        widget:
+          type: calendar
+          firstDayInWeek: monday
+          view: agenda
+          maxEvents: 20
+          previousDays: 3
+          disableHover: true
+          integrations:
+            - type: sonarr
+              service_group: Automation
+              service_name: Sonarr
+              params:
+                showName: true
+                showSeasonEpisode: true
+                showEpisodeTitle: true
+
+            - type: radarr
+              service_group: Automation
+              service_name: Radarr
+
 # --- Media Management ---
 - Media:
     - Jellyseerr:
         icon: jellyseerr.png
-        href: http://localhost:5055
+        href: http://HPOmen16.local:5055
         description: Requests & Discovery
         widget:
           type: jellyseerr
@@ -19,7 +41,7 @@
 
     - Jellyfin:
         icon: jellyfin.png
-        href: http://localhost:8096
+        href: http://HPOmen16.local:8096
         description: Media Server
         widget:
           type: jellyfin
@@ -30,7 +52,7 @@
 - Automation:
     - Prowlarr:
         icon: prowlarr.png
-        href: http://localhost:9696
+        href: http://HPOmen16.local:9696
         widget:
           type: prowlarr
           url: http://gluetun:9696
@@ -38,7 +60,7 @@
 
     - Radarr:
         icon: radarr.png
-        href: http://localhost:7878
+        href: http://HPOmen16.local:7878
         widget:
           type: radarr
           url: http://gluetun:7878 # Dashboard talks to VPN bubble
@@ -46,7 +68,7 @@
 
     - Sonarr:
         icon: sonarr.png
-        href: http://localhost:8989
+        href: http://HPOmen16.local:8989
         widget:
           type: sonarr
           url: http://gluetun:8989
@@ -54,7 +76,7 @@
 
     - Lidarr:
         icon: lidarr.png
-        href: http://localhost:8686
+        href: http://HPOmen16.local:8686
         widget:
           type: lidarr
           url: http://gluetun:8686
@@ -63,9 +85,9 @@
 - Download Client:
     - qBittorrent:
         icon: qbittorrent.png
-        href: http://localhost:8701
+        href: http://HPOmen16.local:8701
         widget:
           type: qbittorrent
-          url: http://host.docker.internal:8701
+          url: http://qbittorrent:8701
           username: admin
           password: password

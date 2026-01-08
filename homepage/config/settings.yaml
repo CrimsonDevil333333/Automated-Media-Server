@@ -1,14 +1,24 @@
 layout:
+  Media Releases:
+    style: row
+    columns: 5 # Calendar must be full width
+
+  Utilities:
+    style: row
+    columns: 5 # Small utility cards
+
   Media:
     style: row
     columns: 3
+
   Automation:
     style: row
     columns: 3
+
   Download Client:
     style: row
-    columns: 3
+    columns: 2
 # --- Glance Appearance ---
-# cardBlur: none # Glance uses solid cards, not blur
 # theme: dark
-# color: slate # Matches the 'Catppuccin Mocha' vibe
+# color: slate
+# cardBlur: none

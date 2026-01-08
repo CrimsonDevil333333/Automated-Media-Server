@@ -25,6 +25,7 @@ services:
       - 7878:7878   # Radarr
       - 8989:8989   # Sonarr
       - 8686:8686   # Lidarr
+      - 4545:4545   # Requestrr Web UI
       - 6767:6767   # Bazarr
       - 9696:9696   # Prowlarr
       - 8191:8191   # FlareSolverr
@@ -115,10 +116,14 @@ services:
     volumes:
       - ./homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock
+    dns:
+      - 1.1.1.1 # Cloudflare
+      - 8.8.8.8 # Google
     environment:
       - TZ=${TIMEZONE}
       # Only for home networks
       - HOMEPAGE_ALLOWED_HOSTS=*
+      - LOG_LEVEL=debug
     restart: unless-stopped
 
   # --- PRIVACY ZONE (VPN Network) ---
@@ -166,6 +171,20 @@ services:
     volumes:
       - ./lidarr:/config
       - ${DATA_LOCATION}:/data
+    restart: unless-stopped
+
+  requestrr:
+    image: darkalfx/requestrr
+    container_name: requestrr
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TIMEZONE}
+    volumes:
+      - ./requestrr:/config
     restart: unless-stopped
 
   bazarr:
