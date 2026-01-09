@@ -1,17 +1,4 @@
 services:
-
-  # nginx-proxy-manager:
-  #   image: 'jc21/nginx-proxy-manager:latest'
-  #   container_name: nginx-proxy-manager
-  #   restart: unless-stopped
-  #   ports:
-  #     - '80:80'   # Public HTTP
-  #     - '81:81'   # Admin UI
-  #     - '443:443' # Public HTTPS
-  #   volumes:
-  #     - ./npm/data:/data
-  #     - ./npm/letsencrypt:/etc/letsencrypt
-
   # --- NETWORK & PRIVACY HUB ---
   gluetun:
     image: qmcgaw/gluetun
@@ -19,17 +6,15 @@ services:
     cap_add:
       - NET_ADMIN
     devices:
-      - /dev/net/tun
-    # All ports for services behind the VPN must be mapped here
+      - /dev/net/tun:/dev/net/tun
     ports:
       - 7878:7878   # Radarr
       - 8989:8989   # Sonarr
       - 8686:8686   # Lidarr
-      - 4545:4545   # Requestrr Web UI
+      - 4545:4545   # Requestrr
       - 6767:6767   # Bazarr
       - 9696:9696   # Prowlarr
       - 8191:8191   # FlareSolverr
-      # - 5055:5055   # Jellyseerr
     volumes:
       - ./gluetun:/gluetun
     environment:
@@ -39,7 +24,8 @@ services:
       - OPENVPN_PASSWORD=${OPENVPN_PASSWORD}
       - FREE_ONLY=on
       - TZ=${TIMEZONE}
-      # DNS & Connectivity Fixes for Windows/Proton Free
+      - BLOCK_IPV6=on
+      - VPN_ENDPOINT_IP_VERSION=v4
       - DOT=off
       - DNS_ADDRESS=1.1.1.1
       - DNS_KEEP_NAMESERVER=off
@@ -49,32 +35,45 @@ services:
       - FIREWALL_OUTBOUND_SUBNETS=192.168.0.0/16,10.0.0.0/8,172.16.0.0/12
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/gluetun.png"
+      casaos_title: "Gluetun VPN"
     restart: always
 
   # --- PERFORMANCE ZONE (ISP Network) ---
-
   jellyfin:
-    image: jellyfin/jellyfin
+    image: lscr.io/linuxserver/jellyfin:latest
     container_name: jellyfin
     dns:
-      - 1.1.1.1 # Cloudflare
-      - 8.8.8.8 # Google
+      - 1.1.1.1
+    sysctls:
+      - net.ipv6.conf.all.disable_ipv6=1
     ports:
       - 8096:8096
+    # Only enable these for pi or linux absed systems
+    # group_add:
+    #   - "107" # Render group ID for RPi 5 GPU access
+    # devices:
+    #   - /dev/dri:/dev/dri # Enables V4L2 hardware transcoding
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=${TIMEZONE}
     volumes:
       - ./jellyfin-config:/config
       - ./jellyfin-cache:/cache
       - ${DATA_LOCATION}:/data
-    environment:
-      - TZ=${TIMEZONE}
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/jellyfin.png"
+      casaos_title: "Jellyfin"
     restart: unless-stopped
 
   qbittorrent:
-    image: lscr.io/linuxserver/qbittorrent
+    image: lscr.io/linuxserver/qbittorrent:latest
     container_name: qbittorrent
     ports:
-      - 8701:8701          # Web UI
-      - 6881:6881          # Torrent traffic
+      - 8701:8701
+      - 6881:6881
       - 6881:6881/udp
     environment:
       - PUID=1000
@@ -84,28 +83,29 @@ services:
     volumes:
       - ./qbittorrent:/config
       - ${DATA_LOCATION}:/data
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/qbittorrent.png"
+      casaos_title: "qBittorrent"
     restart: unless-stopped
 
   jellyseerr:
     image: fallenbagel/jellyseerr:latest
     container_name: jellyseerr
-    # Removed jellyseerr from vpn
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     ports:
       - 5055:5055
-    dns:
-      - 1.1.1.1 # Cloudflare
-      - 8.8.8.8 # Google
-    # network_mode: "service:gluetun"
     depends_on:
       - gluetun
       - jellyfin
     environment:
       - TZ=${TIMEZONE}
-      - LOG_LEVEL=debug # Changed to debug for better troubleshooting
     volumes:
       - ./jellyseerr:/app/config
-    # extra_hosts:
-    #   - "host.docker.internal:host-gateway"
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/jellyseerr.png"
+      casaos_title: "Jellyseerr"
     restart: unless-stopped
 
   homepage:
@@ -113,23 +113,23 @@ services:
     container_name: homepage
     ports:
       - 3000:3000
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     volumes:
       - ./homepage/config:/app/config
       - /var/run/docker.sock:/var/run/docker.sock
-    dns:
-      - 1.1.1.1 # Cloudflare
-      - 8.8.8.8 # Google
     environment:
       - TZ=${TIMEZONE}
-      # Only for home networks
       - HOMEPAGE_ALLOWED_HOSTS=*
-      - LOG_LEVEL=debug
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/homepage.png"
+      casaos_title: "Homepage"
     restart: unless-stopped
 
   # --- PRIVACY ZONE (VPN Network) ---
-
   radarr:
-    image: lscr.io/linuxserver/radarr
+    image: lscr.io/linuxserver/radarr:latest
     container_name: radarr
     network_mode: "service:gluetun"
     depends_on:
@@ -141,10 +141,14 @@ services:
     volumes:
       - ./radarr:/config
       - ${DATA_LOCATION}:/data
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/radarr.png"
+      casaos_title: "Radarr"
+      casaos_webui: "7878"
     restart: unless-stopped
 
   sonarr:
-    image: lscr.io/linuxserver/sonarr
+    image: lscr.io/linuxserver/sonarr:latest
     container_name: sonarr
     network_mode: "service:gluetun"
     depends_on:
@@ -156,10 +160,14 @@ services:
     volumes:
       - ./sonarr:/config
       - ${DATA_LOCATION}:/data
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/sonarr.png"
+      casaos_title: "Sonarr"
+      casaos_webui: "8989"
     restart: unless-stopped
 
   lidarr:
-    image: lscr.io/linuxserver/lidarr
+    image: lscr.io/linuxserver/lidarr:latest
     container_name: lidarr
     network_mode: "service:gluetun"
     depends_on:
@@ -171,10 +179,14 @@ services:
     volumes:
       - ./lidarr:/config
       - ${DATA_LOCATION}:/data
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/lidarr.png"
+      casaos_title: "Lidarr"
+      casaos_webui: "8686"
     restart: unless-stopped
 
   requestrr:
-    image: darkalfx/requestrr
+    image: lscr.io/linuxserver/requestrr:latest
     container_name: requestrr
     network_mode: "service:gluetun"
     depends_on:
@@ -185,10 +197,14 @@ services:
       - TZ=${TIMEZONE}
     volumes:
       - ./requestrr:/config
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/requestrr.png"
+      casaos_title: "Requestrr"
+      casaos_webui: "4545"
     restart: unless-stopped
 
   bazarr:
-    image: lscr.io/linuxserver/bazarr
+    image: lscr.io/linuxserver/bazarr:latest
     container_name: bazarr
     network_mode: "service:gluetun"
     depends_on:
@@ -200,10 +216,14 @@ services:
     volumes:
       - ./bazarr:/config
       - ${DATA_LOCATION}:/data
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/bazarr.png"
+      casaos_title: "Bazarr"
+      casaos_webui: "6767"
     restart: unless-stopped
 
   prowlarr:
-    image: lscr.io/linuxserver/prowlarr
+    image: lscr.io/linuxserver/prowlarr:latest
     container_name: prowlarr
     network_mode: "service:gluetun"
     depends_on:
@@ -214,6 +234,10 @@ services:
       - TZ=${TIMEZONE}
     volumes:
       - ./prowlarr:/config
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/prowlarr.png"
+      casaos_title: "Prowlarr"
+      casaos_webui: "9696"
     restart: unless-stopped
 
   flaresolverr:
@@ -224,4 +248,8 @@ services:
       - gluetun
     environment:
       - TZ=${TIMEZONE}
+    labels:
+      icon: "https://raw.githubusercontent.com/walkxcode/dashboard-icons/master/png/flaresolverr.png"
+      casaos_title: "FlareSolverr"
+      casaos_webui: "8191"
     restart: unless-stopped

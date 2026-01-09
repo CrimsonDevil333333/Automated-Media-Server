@@ -33,7 +33,7 @@
 
     - FlareSolverr:
         icon: flaresolverr.png
-        href: http://HPOmen16.local:8191
+        href: http://HPOmen16:8191
         description: Cloudflare anti-bot bypass
         # widget:
         #   type: flaresolverr
@@ -41,7 +41,7 @@
 
     - Requestrr:
         icon: requestrr.png
-        href: http://HPOmen16.local:4545
+        href: http://HPOmen16:4545
         description: Chatbot for media requests
         # widget:
         #   type: requestrr
@@ -51,7 +51,7 @@
 - Media:
     - Jellyseerr:
         icon: jellyseerr.png
-        href: http://HPOmen16.local:5055
+        href: http://HPOmen16:5055
         description: Requests & Discovery
         widget:
           type: jellyseerr
@@ -60,18 +60,18 @@
 
     - Jellyfin:
         icon: jellyfin.png
-        href: http://HPOmen16.local:8096
+        href: http://HPOmen16:8096
         description: Media Server
         widget:
           type: jellyfin
           url: http://jellyfin:8096
-          key: cb0d86a2f83d45cea43c91282ae990fc
+          key: 79680ccd3dd14431b63d1f1ad63760f3
 
 # --- Automation (Behind VPN) ---
 - Automation:
     - Prowlarr:
         icon: prowlarr.png
-        href: http://HPOmen16.local:9696
+        href: http://HPOmen16:9696
         description: Indexer manager & proxy
         widget:
           type: prowlarr
@@ -80,7 +80,7 @@
 
     - Radarr:
         icon: radarr.png
-        href: http://HPOmen16.local:7878
+        href: http://HPOmen16:7878
         description: Movie collection manager
         widget:
           type: radarr
@@ -89,7 +89,7 @@
 
     - Sonarr:
         icon: sonarr.png
-        href: http://HPOmen16.local:8989
+        href: http://HPOmen16:8989
         description: TV series collection manager
         widget:
           type: sonarr
@@ -98,7 +98,7 @@
 
     - Lidarr:
         icon: lidarr.png
-        href: http://HPOmen16.local:8686
+        href: http://HPOmen16:8686
         description: Music collection manager
         widget:
           type: lidarr
@@ -107,7 +107,7 @@
 
     - Bazarr:
         icon: bazarr.png
-        href: http://HPOmen16.local:6767
+        href: http://HPOmen16:6767
         description: Subtitle management
         widget:
           type: bazarr
@@ -118,7 +118,7 @@
 - Download Client:
     - qBittorrent:
         icon: qbittorrent.png
-        href: http://HPOmen16.local:8701
+        href: http://HPOmen16:8701
         description: BitTorrent client
         widget:
           type: qbittorrent
